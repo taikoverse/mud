@@ -11,13 +11,15 @@ import (
 	pb "latticexyz/mud/packages/services/protobuf/go/faucet"
 	"math"
 	"math/big"
+	"strings"
 	"time"
 
-	"github.com/dghubble/go-twitter/twitter"
+	// "github.com/dghubble/go-twitter/twitter"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	twitter "github.com/g8rswimmer/go-twitter/v2"
 	"go.uber.org/zap"
 )
 
@@ -228,20 +230,53 @@ func (server *faucetServer) DripVerifyTweet(ctx context.Context, request *pb.Dri
 		return nil, err
 	}
 
-	tweets, resp, err := server.twitterClient.Timelines.UserTimeline(&twitter.UserTimelineParams{
-		ScreenName: request.Username,
-		TweetMode:  "extended",
-		Count:      server.dripConfig.NumLatestTweetsForVerify,
-	})
-
+	// Get userid from username.
+	userOpts := twitter.UserLookupOpts{
+		Expansions: []twitter.Expansion{},
+	}
+	userResponse, err := server.twitterClient.UserNameLookup(context.Background(), strings.Split(request.Username, ","), userOpts)
+	
 	if err != nil {
-		server.logger.Error("could not get tweets from account", zap.Error(err))
-		return nil, fmt.Errorf("could not get tweets from account")
+		server.logger.Error("could not get user id from user name", zap.Error(err))
+		return nil, fmt.Errorf("could not get user id from user name")
 	}
-	if resp.StatusCode != 200 {
-		server.logger.Error("response not 200-OK Twitter API", zap.String("status", resp.Status))
-		return nil, fmt.Errorf("response not 200-OK from Twitter API")
+
+	if len(userResponse.Raw.Users) != 1 {
+		server.logger.Error("twitter get user id from user name should only get one result")
+		return nil, fmt.Errorf("should only get one result")
 	}
+
+	userId := userResponse.Raw.Users[0].ID
+
+
+	// Get tweets from userid.
+	timelineOpts := twitter.UserTweetTimelineOpts{
+		MaxResults: 5,
+	}
+
+	timelineResponse, err := server.twitterClient.UserTweetTimeline(context.Background(), userId, timelineOpts)
+	if err != nil {
+		server.logger.Error("user tweet timeline error:", zap.Error(err))
+		return nil, fmt.Errorf("user tweet timeline error")
+	}
+
+	tweets := timelineResponse.Raw.Tweets
+	// tweet := tweets[0]
+
+	// tweets, resp, err := server.twitterClient.Timelines.UserTimeline(&twitter.UserTimelineParams{
+	// 	ScreenName: request.Username,
+	// 	TweetMode:  "extended",
+	// 	Count:      server.dripConfig.NumLatestTweetsForVerify,
+	// })
+
+	// if err != nil {
+	// 	server.logger.Error("could not get tweets from account", zap.Error(err))
+	// 	return nil, fmt.Errorf("could not get tweets from account")
+	// }
+	// if resp.StatusCode != 200 {
+	// 	server.logger.Error("response not 200-OK Twitter API", zap.String("status", resp.Status))
+	// 	return nil, fmt.Errorf("response not 200-OK from Twitter API")
+	// }
 
 	if len(tweets) == 0 {
 		server.logger.Error("twitter search did not return any tweets from timeline")

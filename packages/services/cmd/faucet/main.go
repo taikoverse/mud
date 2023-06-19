@@ -36,21 +36,23 @@ The flags are:
 package main
 
 import (
-	"context"
+	// "context"
 	"crypto/ecdsa"
 	"flag"
+	"fmt"
 	"os"
 	"time"
-
+	"net/http"
 	"latticexyz/mud/packages/services/pkg/eth"
 	"latticexyz/mud/packages/services/pkg/faucet"
 	"latticexyz/mud/packages/services/pkg/grpc"
 	"latticexyz/mud/packages/services/pkg/logger"
 
-	"github.com/dghubble/go-twitter/twitter"
+	// "github.com/dghubble/go-twitter/twitter"
+	twitter "github.com/g8rswimmer/go-twitter/v2"
 	"github.com/ethereum/go-ethereum/crypto"
 	"go.uber.org/zap"
-	"golang.org/x/oauth2/clientcredentials"
+	// "golang.org/x/oauth2/clientcredentials"
 )
 
 var (
@@ -71,6 +73,14 @@ var (
 	nameSystemAddress = flag.String("name-system-address", "", "Address of NameSystem to set an address/username mapping when verifying drip tweet. Not specified by default")
 	metricsPort       = flag.Int("metrics-port", 6060, "Prometheus metrics http handler port. Defaults to port 6060")
 )
+
+type authorize struct {
+	Token string
+}
+
+func (a authorize) Add(req *http.Request) {
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", a.Token))
+}
 
 func main() {
 	// Parse command line flags.
@@ -102,15 +112,24 @@ func main() {
 	// Ensure that a twitter <-> address store is setup.
 	faucet.SetupStore()
 
-	// Oauth2 configures a client that uses app credentials to keep a fresh token.
-	config := &clientcredentials.Config{
-		ClientID:     os.Getenv("CLIENT_ID"),
-		ClientSecret: os.Getenv("CLIENT_SECRET"),
-		TokenURL:     "https://api.twitter.com/oauth2/token",
-	}
+	// // Oauth2 configures a client that uses app credentials to keep a fresh token.
+	// config := &clientcredentials.Config{
+	// 	// ClientID:     os.Getenv("CLIENT_ID"),
+	// 	// ClientSecret: os.Getenv("CLIENT_SECRET"),
+	// 	ClientToken:  os.Getenv("BEARER_TOKEN"),
+	// 	TokenURL:     "https://api.twitter.com/oauth2/token",
+	// }
 
 	// Get a connection to Twitter API with a client.
-	twitterClient := twitter.NewClient(config.Client(context.Background()))
+	// twitterClient := twitter.NewClient(config.Client(context.Background()))
+
+	twitterClient := &twitter.Client{
+		Authorizer: authorize{
+			Token: os.Getenv("BEARER_TOKEN"),
+		},
+		Client: http.DefaultClient,
+		Host:   "https://api.twitter.com",
+	}
 
 	// Get an instance of ethereum client.
 	ethClient := eth.GetEthereumClient(*wsUrl, logger)

@@ -9,7 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dghubble/go-twitter/twitter"
+	// "github.com/dghubble/go-twitter/twitter"
+	twitter "github.com/g8rswimmer/go-twitter/v2"
 	"github.com/keith-turner/ecoji"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -45,9 +46,9 @@ func FindEmojiPosition(tweetText string) (int, error) {
 	return -1, fmt.Errorf("no emoji signature found in tweet: %s", tweetText)
 }
 
-func ExtractSignatureFromTweet(tweet twitter.Tweet) (string, error) {
+func ExtractSignatureFromTweet(tweet *twitter.TweetObj) (string, error) {
 	// Find where the signature begins. We do this by finding the first emoji.
-	tweetText := tweet.FullText
+	tweetText := tweet.Text
 	signatureStart, err := FindEmojiPosition(tweetText)
 	if err != nil {
 		return "", err
@@ -64,8 +65,9 @@ func ExtractSignatureFromTweet(tweet twitter.Tweet) (string, error) {
 	return out.String(), nil
 }
 
-func VerifyDripRequest(tweets []twitter.Tweet, username string, address string, numLatestTweets int) error {
+func VerifyDripRequest(tweets []*twitter.TweetObj, username string, address string, numLatestTweets int) error {
 	for idx := 0; idx < utils.Min(len(tweets), numLatestTweets); idx++ {
+		fmt.Println("tweets", tweets[idx])
 		err := VerifyDripRequestTweet(tweets[idx], username, address)
 		if err == nil {
 			return nil
@@ -75,7 +77,7 @@ func VerifyDripRequest(tweets []twitter.Tweet, username string, address string, 
 	return fmt.Errorf("did not find drip tweet in latest %d tweets from user @%s", numLatestTweets, username)
 }
 
-func VerifyDripRequestTweet(tweet twitter.Tweet, username string, address string) error {
+func VerifyDripRequestTweet(tweet *twitter.TweetObj, username string, address string) error {
 	tweetSignature, err := ExtractSignatureFromTweet(tweet)
 	if err != nil {
 		return err

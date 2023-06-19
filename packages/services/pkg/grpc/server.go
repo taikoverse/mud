@@ -14,7 +14,8 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/dghubble/go-twitter/twitter"
+	// "github.com/dghubble/go-twitter/twitter"
+	twitter "github.com/g8rswimmer/go-twitter/v2"
 	"github.com/ethereum/go-ethereum/ethclient"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
