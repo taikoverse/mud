@@ -6,3 +6,4 @@ FaucetStore
 /data
 API
 dist
+.env

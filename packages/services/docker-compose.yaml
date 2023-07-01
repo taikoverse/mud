@@ -1,0 +1,80 @@
+version: "3.4"
+x-logging:
+  &logging
+  logging:
+    options:
+      max-size: 10m
+      max-file: "3"
+
+services:
+  faucet:
+    image: sha256:43eaf751f58131fb4c38dcfc37f4cfb7f2ac440b97442010818255780b79dd2a
+    restart: unless-stopped
+    pull_policy: always
+    env_file:
+      - .env
+    volumes:
+      - ./script:/script
+    ports:
+      - "${FAUCET_GRPC_PORT}:50081"
+      - "${FAUCET_GRPC_WEB_PORT}:50082"
+      - "${FAUCET_METRICS_PORT}:50080"
+    entrypoint:
+      - /bin/sh
+      - -c
+      - "/script/start-faucet.sh"
+    <<: *logging
+
+  relay:
+    image: sha256:b3de56d336a9c6b318ea80d887c836a06f98f2d2e386bd2dd375e7d3423b0809
+    restart: unless-stopped
+    pull_policy: always
+    env_file:
+      - .env
+    volumes:
+      - ./script:/script
+    ports:
+      - "${RELAY_GRPC_PORT}:50071"
+      - "${RELAY_GRPC_WEB_PORT}:50072"
+      - "${RELAY_METRICS_PORT}:50070"
+    entrypoint:
+      - /bin/sh
+      - -c
+      - "/script/start-relay.sh"
+    <<: *logging
+
+  stream:
+    image: sha256:010a9f3f641c4d3366ae4ed8fc6d6402094f30d3e903f783726c648b60405c76
+    restart: unless-stopped
+    pull_policy: always
+    env_file:
+      - .env
+    volumes:
+      - ./script:/script
+    ports:
+      - "${STREAM_GRPC_PORT}:50051"
+      - "${STREAM_GRPC_WEB_PORT}:50052"
+      - "${STREAM_METRICS_PORT}:50050"
+    entrypoint:
+      - /bin/sh
+      - -c
+      - "/script/start-stream.sh"
+    <<: *logging
+
+  snapshot:
+    image: sha256:a0c4b250fa80af194a1181a17c97983473da60a6f84e7d0397cff5efef95f28a
+    restart: unless-stopped
+    pull_policy: always
+    env_file:
+      - .env
+    volumes:
+      - ./script:/script
+    ports:
+      - "${SNAPSHOT_GRPC_PORT}:50061"
+      - "${SNAPSHOT_GRPC_WEB_PORT}:50062"
+      - "${SNAPSHOT_METRICS_PORT}:50060"
+    entrypoint:
+      - /bin/sh
+      - -c
+      - "/script/start-snapshot.sh"
+    <<: *logging
