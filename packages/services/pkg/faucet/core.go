@@ -24,6 +24,7 @@ type DripConfig struct {
 	DripLimit     float64
 	DevMode       bool
 	TwitterMode   bool
+	TwitterBearerToken string
 
 	// Miscellaneous.
 	NumLatestTweetsForVerify int

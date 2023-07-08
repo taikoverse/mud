@@ -25,6 +25,8 @@ The flags are:
 		Drip limit in ETH per drip frequency interval. Default to 1 ETH
 	-twitter
 		Flag to run the faucet in Twitter mode, where to receive a drip you have to tweet a signature. Default to false.
+	-twitter-bearer-token
+		Twitter bearer token.
 	-num-latest-tweets
 		Number of latest tweets to check per user when verifying drip tweet. Default to 5.
 	-name-system-address
@@ -40,7 +42,6 @@ import (
 	"crypto/ecdsa"
 	"flag"
 	"fmt"
-	"os"
 	"time"
 	"net/http"
 	"latticexyz/mud/packages/services/pkg/eth"
@@ -69,6 +70,8 @@ var (
 	dripLimit     = flag.Float64("drip-limit", 1, "Drip limit in ETH per drip frequency interval. Default to 1 ETH")
 	// Flags for using twitter to verify drip requests.
 	twitterMode       = flag.Bool("twitter", false, "Flag to run the faucet in Twitter mode, where to receive a drip you have to tweet a signature. Default to false")
+	// Twitter token
+	twitterBearerToken = flag.String("twitter-bearer-token", "", "Twitter bearer token.")
 	numLatestTweets   = flag.Int("num-latest-tweets", 5, "Number of latest tweets to check per user when verifying drip tweet. Default to 5")
 	nameSystemAddress = flag.String("name-system-address", "", "Address of NameSystem to set an address/username mapping when verifying drip tweet. Not specified by default")
 	metricsPort       = flag.Int("metrics-port", 6060, "Prometheus metrics http handler port. Defaults to port 6060")
@@ -98,6 +101,7 @@ func main() {
 		DripLimit:                *dripLimit,
 		DevMode:                  *devMode,
 		TwitterMode:              *twitterMode,
+		TwitterBearerToken:		  *twitterBearerToken,
 		NumLatestTweetsForVerify: *numLatestTweets,
 		NameSystemAddress:        *nameSystemAddress,
 	}
@@ -107,6 +111,7 @@ func main() {
 		zap.Float64("limit", dripConfig.DripLimit),
 		zap.Bool("dev", dripConfig.DevMode),
 		zap.Bool("twitter", dripConfig.TwitterMode),
+		zap.String("twitter token", dripConfig.TwitterBearerToken),
 	)
 
 	// Ensure that a twitter <-> address store is setup.
@@ -125,7 +130,7 @@ func main() {
 
 	twitterClient := &twitter.Client{
 		Authorizer: authorize{
-			Token: os.Getenv("BEARER_TOKEN"),
+			Token: dripConfig.TwitterBearerToken,
 		},
 		Client: http.DefaultClient,
 		Host:   "https://api.twitter.com",
